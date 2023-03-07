@@ -2,11 +2,12 @@
 # ./gera.sh "string_da_chave" "Nome do Estabelecimento ou Pessoa" "Cidade" "valor (opcional, formato 0.00)"
 #
 #
-ord(){ 
+ord(){
     printf  '%d' "'$1"
 }
 
 CRC16(){
+    local str="$1"
     CRC16_Lookup=(
             0x0000 0x1021 0x2042 0x3063 0x4084 0x50A5 0x60C6 0x70E7 
             0x8108 0x9129 0xA14A 0xB16B 0xC18C 0xD1AD 0xE1CE 0xF1EF 
@@ -46,14 +47,11 @@ CRC16(){
     
     for (( i=0; i < len; i++ ))
     {
-        t=$(( ($crc16 >> 8) ^ $(ord ${str:$i:1} ) ))
+        t=$(( ($crc16 >> 8) ^ $(ord "${str:$i:1}" ) ))
         crc16=$(( (($crc16 << 8) & 0xffff) ^ ${CRC16_Lookup[$t]} ))
     }
-    crc=$(printf '%x\n' $crc16)
+    crc=$(printf '%04x\n' $crc16)
 }
-
-
-
 
 FORMAT="01"
 (( ${#FORMAT} < 10 )) && S_FORMAT=0${#FORMAT} || S_FORMAT=${#FORMAT}
@@ -91,9 +89,6 @@ string="00${S_FORMAT}${FORMAT}\
 
 # nao consegui uma implementacao crc-ccitt no linux, entao uso esse site
 
-crc=$(curl -s "https://www.lammertbies.nl/include/crc-calculation.php?crc=${string// /%20}&method=ascii" \
-| grep -Eo 'CRC-CCITT \(0xFFFF\)</td><td align="left"><b>0x[0-9A-F]+' | cut -f3 -dx)
 CRC16 "$string"
-
 
 echo $string$crc
