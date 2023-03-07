@@ -6,6 +6,8 @@ ord(){
     printf  '%d' "'$1"
 }
 
+# roubadaço de https://github.com/torvalds/linux/blob/master/lib/crc-ccitt.c
+
 CRC16(){
     local str="$1"
     CRC16_Lookup=(
@@ -87,7 +89,7 @@ string="00${S_FORMAT}${FORMAT}\
 620705${S_TXID}${TXID}\
 6304"
 
-# nao consegui uma implementacao crc-ccitt no linux, entao uso esse site
+
 
 CRC16 "$string"
 
