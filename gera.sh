@@ -4,8 +4,10 @@
 # Opcionalmente, é possível informar o valor da cobrança 
 # e pedir a geração de um qrcode (depende do qrencode)
 usage(){
-    echo "$0 -c \"chavepix@email.com\" -n \"nome do estabelecimento ou pessoa\" -l \"cidade\" [-v \"valor\"] [-i]" 1>&2
-    echo "   -i: gera QRcode além da string" 1>&2
+    echo "$0 -c \"chavepix@email.com\" -n \"nome do estabelecimento ou pessoa\" -l \"cidade\" [-v \"valor\"] [-i] [-t]" 1>&2
+    echo "Opções:" 1>&2
+    echo "-i        Salva imagem do QRcode" 1>&2
+    echo "-t        mostra o QRCode no terminal" 1>&2
     exit 2
 }
 
@@ -61,13 +63,14 @@ CRC16(){
     crc=$(printf '%04x\n' $crc16)
 }
 
-while getopts "c:n:l:v:i" opt; do
+while getopts "c:n:l:v:it" opt; do
     case $opt in
         c) CHAVE="$OPTARG";;
         n) MERCHANT_NAME="$OPTARG";;
         l) MERCHANT_CITY="${OPTARG// /.}";;
         v) valor="$OPTARG";;
         i) which qrencode >/dev/null && img=1 || echo "Erro: qrencode não instalado";;
+        t) which qrencode >/dev/null && screen=1 || echo "Erro: qrencode não instalado";;
         *) usage
     esac
 done
@@ -118,4 +121,11 @@ CRC16 "$string"
 
 echo $string${crc^^}
 
-(( ${img:-0} == 1 )) && qrencode -s30 -o ${CHAVE}${valor//./}.png "$string${crc^^}"
+(( ${img:-0} == 1 )) && {
+    qrencode -s30 -o ${CHAVE}${valor//./}.png "$string${crc^^}" && \
+    echo "QRCode salvo em ${CHAVE}${valor//./}.png"
+}
+
+(( ${screen:-0} == 1 )) && {
+    qrencode -t ANSI256 "$string${crc^^}"
+}
