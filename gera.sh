@@ -79,7 +79,6 @@ if (( OPTIND == 1 )); then
     echo "Nenhuma opção especificada" 1>&2
     echo 
     usage
-    exit 2
 fi
 
 [ -z "$CHAVE" ] && usage
