@@ -1,7 +1,14 @@
 #!/bin/bash
-# ./gera.sh "string_da_chave" "Nome do Estabelecimento ou Pessoa" "Cidade" "valor (opcional, formato 0.00)"
-#
-#
+# Shell Script para gerar string de Pix Copia e Cola
+# necessário informar a chave pix, nome do estabelecimento e cidade
+# Opcionalmente, é possível informar o valor da cobrança 
+# e pedir a geração de um qrcode (depende do qrencode)
+usage(){
+    echo "$0 -c \"chavepix@email.com\" -n \"nome do estabelecimento ou pessoa\" -l \"cidade\" [-v \"valor\"] [-i]" 1>&2
+    echo "   -i: gera QRcode além da string" 1>&2
+    exit 2
+}
+
 ord(){
     printf  '%d' "'$1"
 }
@@ -54,11 +61,32 @@ CRC16(){
     crc=$(printf '%04x\n' $crc16)
 }
 
+while getopts "c:n:l:v:i" opt; do
+    case $opt in
+        c) CHAVE="$OPTARG";;
+        n) MERCHANT_NAME="$OPTARG";;
+        l) MERCHANT_CITY="${OPTARG// /.}";;
+        v) valor="$OPTARG";;
+        i) which qrencode >/dev/null && img=1 || echo "Erro: qrencode não instalado";;
+        *) usage
+    esac
+done
+
+if (( OPTIND == 1 )); then
+    echo "Nenhuma opção especificada" 1>&2
+    echo 
+    usage
+    exit 2
+fi
+
+[ -z "$CHAVE" ] && usage
+[ -z "$MERCHANT_NAME" ] && usage
+[ -z "$MERCHANT_CITY" ] && usage
+
 FORMAT="01"
 (( ${#FORMAT} < 10 )) && S_FORMAT=0${#FORMAT} || S_FORMAT=${#FORMAT}
 GUI="br.gov.bcb.pix"
 (( ${#GUI} < 10 )) && S_GUI=0${#GUI} || S_GUI=${#GUI}
-CHAVE="$1"
 (( ${#CHAVE} < 10 )) && S_CHAVE=0${#CHAVE} || S_CHAVE=${#CHAVE}
 MERCHANT_CATEGORY="0000"
 (( ${#MERCHANT_CATEGORY} < 10 )) && S_MERCHANT_CATEGORY=0${#MERCHANT_CATEGORY} || S_MERCHANT_CATEGORY=${#MERCHANT_CATEGORY}
@@ -66,14 +94,12 @@ CURRENCY="986"
 (( ${#CURRENCY} < 10 )) && S_CURRENCY=0${#CURRENCY} || S_CURRENCY=${#CURRENCY}
 COUNTRY="BR"
 (( ${#COUNTRY} < 10 )) && S_COUNTRY=0${#COUNTRY} || S_COUNTRY=${#COUNTRY}
-MERCHANT_NAME="$2"
 (( ${#MERCHANT_NAME} < 10 )) && S_MERCHANT_NAME=0${#MERCHANT_NAME} || S_MERCHANT_NAME=${#MERCHANT_NAME}
-MERCHANT_CITY="${3// /.}"
 (( ${#MERCHANT_CITY} < 10 )) && S_MERCHANT_CITY=0${#MERCHANT_CITY} || S_MERCHANT_CITY=${#MERCHANT_CITY}
 TXID="***"
 (( ${#TXID} < 10 )) && S_TXID=0${#TXID} || S_TXID=${#TXID}
-[ ! -z "$4" ] && {
-  (( ${#4} < 10 )) && VALOR=540${#4}${4} || VALOR=54${#4}${4}
+[ ! -z "$valor" ] && {
+  (( ${#valor} < 10 )) && VALOR=540${#valor}${valor} || VALOR=54${#valor}${valor}
 }
 
 string="00${S_FORMAT}${FORMAT}\
@@ -88,8 +114,8 @@ string="00${S_FORMAT}${FORMAT}\
 620705${S_TXID}${TXID}\
 6304"
 
-
-
 CRC16 "$string"
 
 echo $string${crc^^}
+
+(( ${img:-0} == 1 )) && qrencode -s30 -o ${CHAVE}${valor//./}.png "$string${crc^^}"
