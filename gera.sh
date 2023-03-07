@@ -10,7 +10,7 @@ ord(){
 
 CRC16(){
     local str="$1"
-    CRC16_Lookup=(
+    lookup=(
             0x0000 0x1021 0x2042 0x3063 0x4084 0x50A5 0x60C6 0x70E7 
             0x8108 0x9129 0xA14A 0xB16B 0xC18C 0xD1AD 0xE1CE 0xF1EF 
             0x1231 0x0210 0x3273 0x2252 0x52B5 0x4294 0x72F7 0x62D6 
@@ -47,10 +47,9 @@ CRC16(){
     crc16=0xFFFF
     len=${#str};
     
-    for (( i=0; i < len; i++ ))
-    {
-        t=$(( ($crc16 >> 8) ^ $(ord "${str:$i:1}" ) ))
-        crc16=$(( (($crc16 << 8) & 0xffff) ^ ${CRC16_Lookup[$t]} ))
+    for (( i=0; i < len; i++ )){
+        t=$(( (crc16 >> 8) ^ $(ord "${str:$i:1}" ) ))
+        crc16=$(( ((crc16 << 8) & 0xffff) ^ ${lookup[$t]} ))
     }
     crc=$(printf '%04x\n' $crc16)
 }
@@ -93,4 +92,4 @@ string="00${S_FORMAT}${FORMAT}\
 
 CRC16 "$string"
 
-echo $string$crc
+echo $string${crc^^}
